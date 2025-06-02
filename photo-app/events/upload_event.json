@@ -1,0 +1,10 @@
+{
+  "body": "{\"fileName\":\"test-image.jpg\",\"image\":\"SGVsbG8gV29ybGQ=\"}",
+  "resource": "/photos",
+  "path": "/photos",
+  "httpMethod": "POST",
+  "isBase64Encoded": false,
+  "headers": {
+    "Content-Type": "application/json"
+  }
+}

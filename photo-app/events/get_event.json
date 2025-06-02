@@ -1,0 +1,12 @@
+{
+  "resource": "/photos/{photoId}",
+  "path": "/photos/test-photo-id",
+  "httpMethod": "GET",
+  "pathParameters": {
+    "photoId": "test-photo-id"
+  },
+  "isBase64Encoded": false,
+  "headers": {
+    "Content-Type": "application/json"
+  }
+}
