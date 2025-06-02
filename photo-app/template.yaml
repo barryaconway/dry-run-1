@@ -1,0 +1,158 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  photo-app
+  
+  Serverless photo upload application with API Gateway, Lambda, S3, and DynamoDB
+
+# Global configuration for all resources
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 128
+    Tracing: Active
+    LoggingConfig:
+      LogFormat: JSON
+  Api:
+    Cors:
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+      AllowOrigin: "'*'"
+
+# Parameters that can be overridden at deployment time
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+    Description: Environment name
+
+Resources:
+  # S3 Bucket for storing photos
+  PhotosBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub photo-app-bucket-${Environment}-${AWS::AccountId}
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldObjects
+            Status: Enabled
+            ExpirationInDays: 365  # Optional: Delete objects after 1 year
+
+  # DynamoDB table for storing photo metadata
+  PhotosTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub Photos-${Environment}
+      BillingMode: PAY_PER_REQUEST  # On-demand capacity
+      AttributeDefinitions:
+        - AttributeName: photoId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: photoId
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true  # Enable server-side encryption
+
+  # Lambda function for uploading photos
+  UploadPhotoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/upload_photo/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          PHOTOS_TABLE: !Ref PhotosTable
+          BUCKET_NAME: !Ref PhotosBucket
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PhotosTable
+        - S3CrudPolicy:
+            BucketName: !Ref PhotosBucket
+      Events:
+        UploadAPI:
+          Type: HttpApi
+          Properties:
+            Path: /photos
+            Method: POST
+            ApiId: !Ref HttpApi
+
+  # Lambda function for retrieving photos
+  GetPhotoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/get_photo/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          PHOTOS_TABLE: !Ref PhotosTable
+          BUCKET_NAME: !Ref PhotosBucket
+          URL_EXPIRATION: 3600  # URL expiration time in seconds (1 hour)
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PhotosTable
+        - S3ReadPolicy:
+            BucketName: !Ref PhotosBucket
+      Events:
+        GetAPI:
+          Type: HttpApi
+          Properties:
+            Path: /photos/{photoId}
+            Method: GET
+            ApiId: !Ref HttpApi
+
+  # HTTP API (API Gateway v2)
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+      CorsConfiguration:
+        AllowOrigins:
+          - '*'
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+
+Outputs:
+  # Output the API endpoint URL
+  ApiEndpoint:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  
+  # Output the S3 bucket name
+  PhotosBucketName:
+    Description: "S3 bucket for storing photos"
+    Value: !Ref PhotosBucket
+  
+  # Output the DynamoDB table name
+  PhotosTableName:
+    Description: "DynamoDB table for storing photo metadata"
+    Value: !Ref PhotosTable
+  
+  # Output the upload function name
+  UploadPhotoFunction:
+    Description: "Upload photo Lambda function"
+    Value: !Ref UploadPhotoFunction
+  
+  # Output the get photo function name
+  GetPhotoFunction:
+    Description: "Get photo Lambda function"
+    Value: !Ref GetPhotoFunction

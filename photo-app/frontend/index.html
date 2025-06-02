@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, button {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 10px 15px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .preview {
+            max-width: 300px;
+            max-height: 300px;
+            margin-top: 10px;
+        }
+        #photoGallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .photo-item {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            width: 200px;
+        }
+        .photo-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+        .error {
+            color: red;
+            margin-top: 5px;
+        }
+        .success {
+            color: green;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Photo App</h1>
+    
+    <div class="container">
+        <!-- Upload Photo Section -->
+        <div class="card">
+            <h2>Upload Photo</h2>
+            <div class="form-group">
+                <label for="photoFile">Select Photo:</label>
+                <input type="file" id="photoFile" accept="image/*">
+            </div>
+            <div id="imagePreviewContainer" style="display: none;">
+                <p>Preview:</p>
+                <img id="imagePreview" class="preview">
+            </div>
+            <button id="uploadButton">Upload Photo</button>
+            <div id="uploadStatus"></div>
+        </div>
+        
+        <!-- Get Photo Section -->
+        <div class="card">
+            <h2>Get Photo</h2>
+            <div class="form-group">
+                <label for="photoId">Photo ID:</label>
+                <input type="text" id="photoId" placeholder="Enter photo ID">
+            </div>
+            <button id="getPhotoButton">Get Photo</button>
+            <div id="photoResult"></div>
+        </div>
+        
+        <!-- Photo Gallery -->
+        <div class="card">
+            <h2>Your Photos</h2>
+            <div id="photoGallery">
+                <p>Your uploaded photos will appear here.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - Replace with your API endpoint when deployed
+        const API_ENDPOINT = 'https://your-api-id.execute-api.your-region.amazonaws.com';
+        
+        // Store uploaded photos in local storage for demo purposes
+        let uploadedPhotos = JSON.parse(localStorage.getItem('uploadedPhotos')) || [];
+        
+        // DOM Elements
+        const photoFileInput = document.getElementById('photoFile');
+        const imagePreview = document.getElementById('imagePreview');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const uploadButton = document.getElementById('uploadButton');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const photoIdInput = document.getElementById('photoId');
+        const getPhotoButton = document.getElementById('getPhotoButton');
+        const photoResult = document.getElementById('photoResult');
+        const photoGallery = document.getElementById('photoGallery');
+        
+        // Display uploaded photos
+        function displayUploadedPhotos() {
+            if (uploadedPhotos.length === 0) {
+                photoGallery.innerHTML = '<p>Your uploaded photos will appear here.</p>';
+                return;
+            }
+            
+            photoGallery.innerHTML = '';
+            uploadedPhotos.forEach(photo => {
+                const photoItem = document.createElement('div');
+                photoItem.className = 'photo-item';
+                
+                const img = document.createElement('img');
+                img.src = photo.imageUrl || 'https://via.placeholder.com/200x150?text=No+Preview';
+                img.alt = photo.fileName;
+                
+                const info = document.createElement('div');
+                info.innerHTML = `
+                    <p><strong>ID:</strong> ${photo.photoId}</p>
+                    <p><strong>File:</strong> ${photo.fileName}</p>
+                    <p><strong>Uploaded:</strong> ${new Date(photo.uploadTimestamp).toLocaleString()}</p>
+                `;
+                
+                photoItem.appendChild(img);
+                photoItem.appendChild(info);
+                photoGallery.appendChild(photoItem);
+            });
+        }
+        
+        // Show image preview when file is selected
+        photoFileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreviewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreviewContainer.style.display = 'none';
+            }
+        });
+        
+        // Upload photo
+        uploadButton.addEventListener('click', function() {
+            const file = photoFileInput.files[0];
+            if (!file) {
+                uploadStatus.innerHTML = '<p class="error">Please select a file first.</p>';
+                return;
+            }
+            
+            uploadStatus.innerHTML = '<p>Uploading...</p>';
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Image = e.target.result;
+                
+                // In a real application, this would call your API
+                // For demo purposes, we'll simulate the API call
+                simulateUploadAPI(file.name, base64Image)
+                    .then(response => {
+                        uploadStatus.innerHTML = '<p class="success">Upload successful!</p>';
+                        
+                        // Store the uploaded photo info
+                        const photoInfo = {
+                            photoId: response.photoId,
+                            fileName: response.fileName,
+                            uploadTimestamp: response.uploadTimestamp,
+                            s3Key: response.s3Key,
+                            imageUrl: base64Image // For demo purposes only
+                        };
+                        
+                        uploadedPhotos.unshift(photoInfo);
+                        localStorage.setItem('uploadedPhotos', JSON.stringify(uploadedPhotos));
+                        
+                        // Update the gallery
+                        displayUploadedPhotos();
+                        
+                        // Reset the form
+                        photoFileInput.value = '';
+                        imagePreviewContainer.style.display = 'none';
+                    })
+                    .catch(error => {
+                        uploadStatus.innerHTML = `<p class="error">Upload failed: ${error.message}</p>`;
+                    });
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        // Get photo
+        getPhotoButton.addEventListener('click', function() {
+            const photoId = photoIdInput.value.trim();
+            if (!photoId) {
+                photoResult.innerHTML = '<p class="error">Please enter a photo ID.</p>';
+                return;
+            }
+            
+            photoResult.innerHTML = '<p>Fetching photo...</p>';
+            
+            // In a real application, this would call your API
+            // For demo purposes, we'll simulate the API call
+            simulateGetPhotoAPI(photoId)
+                .then(response => {
+                    photoResult.innerHTML = `
+                        <p class="success">Photo found!</p>
+                        <div class="photo-item">
+                            <img src="${response.imageUrl || 'https://via.placeholder.com/200x150?text=No+Preview'}" alt="${response.fileName}">
+                            <p><strong>File:</strong> ${response.fileName}</p>
+                            <p><strong>Uploaded:</strong> ${new Date(response.uploadTimestamp).toLocaleString()}</p>
+                            <p><a href="${response.presignedUrl}" target="_blank">Download Photo</a></p>
+                        </div>
+                    `;
+                })
+                .catch(error => {
+                    photoResult.innerHTML = `<p class="error">Failed to get photo: ${error.message}</p>`;
+                });
+        });
+        
+        // Simulate API calls for local testing
+        function simulateUploadAPI(fileName, imageData) {
+            return new Promise((resolve, reject) => {
+                // Simulate API delay
+                setTimeout(() => {
+                    // In a real application, this would be the response from your API
+                    const response = {
+                        photoId: 'photo-' + Date.now(),
+                        fileName: fileName,
+                        uploadTimestamp: new Date().toISOString(),
+                        s3Key: `photos/photo-${Date.now()}/${fileName}`
+                    };
+                    resolve(response);
+                    
+                    // Uncomment to simulate an error
+                    // reject(new Error('API error'));
+                }, 1000);
+            });
+        }
+        
+        function simulateGetPhotoAPI(photoId) {
+            return new Promise((resolve, reject) => {
+                // Simulate API delay
+                setTimeout(() => {
+                    // Look for the photo in our local storage
+                    const photo = uploadedPhotos.find(p => p.photoId === photoId);
+                    
+                    if (photo) {
+                        // In a real application, this would be the response from your API
+                        const response = {
+                            ...photo,
+                            presignedUrl: photo.imageUrl // For demo purposes
+                        };
+                        resolve(response);
+                    } else {
+                        reject(new Error('Photo not found'));
+                    }
+                }, 1000);
+            });
+        }
+        
+        // Initialize the gallery
+        displayUploadedPhotos();
+    </script>
+</body>
+</html>
