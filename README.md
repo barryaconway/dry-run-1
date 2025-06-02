@@ -1,19 +1,24 @@
-# Serverless Photo Upload Application
+# Serverless Photo Application
 
-This repository contains a serverless photo upload application built with AWS services.
+This repository contains a serverless photo application built using AWS services.
 
 ## Project Structure
 
-The main project is located in the [photo-app](./photo-app) directory.
+The main project is located in the `photo-app` directory. Please see the [photo-app README](/photo-app/README.md) for detailed information about the application, its architecture, and setup instructions.
 
 ## Features
 
-- Upload photos via API Gateway
-- Store photos in S3
-- Store metadata in DynamoDB
+- Upload photos to AWS S3
+- Store photo metadata in DynamoDB
 - Retrieve photos using pre-signed URLs
-- Simple HTML frontend for testing
+- Simple HTML frontend for user interaction
 
-## Getting Started
+## Technologies Used
 
-See the [photo-app README](./photo-app/README.md) for detailed setup instructions and documentation.
+- AWS Lambda
+- Amazon API Gateway
+- Amazon S3
+- Amazon DynamoDB
+- AWS SAM (Serverless Application Model)
+- Python 3.9
+- HTML/CSS/JavaScript

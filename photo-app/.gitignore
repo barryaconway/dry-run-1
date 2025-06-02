@@ -43,6 +43,13 @@ samconfig.toml
 .env.test.local
 .env.production.local
 
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
 # Coverage reports
 htmlcov/
 .tox/
@@ -54,21 +61,10 @@ coverage.xml
 *.cover
 .hypothesis/
 
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Dependency directories
-node_modules/
-jspm_packages/
-
-# Distribution directories
-dist/
-out/
-build/
-
-# Serverless directories
+# Serverless
 .serverless/
+
+# Node.js (if using for frontend)
+node_modules/
+npm-debug.log
+yarn-error.log

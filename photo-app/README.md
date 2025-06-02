@@ -1,163 +1,141 @@
-# Serverless Photo Upload Application
+# Serverless Photo Application
 
-A serverless application for uploading and retrieving photos using AWS services. This application provides a simple way to store and manage photos in the cloud with a user-friendly web interface.
+A serverless application for uploading, storing, and retrieving photos using AWS services.
 
 ## Architecture
 
-![Architecture Diagram](https://mermaid.ink/img/pako:eNp1kc1uwjAQhF9l5XOqhFCgUC6VeuqhPfVQcTHOBqwmduQ1KEKQ9947dgiUH3HyZb-Z2fVuQOmUhgxKvFq-Qs1Vw0XFtYFXrpvGcAGfXMJJKQQsZhO4Wy5gOp3A3WwOD7MFLJcPMF8-wuPTEyQJJPEYkjSFJMtgNB5DGkWQjUaQxTGM4wTSLIU4jmGUJJBEMaTZCNJRBkkcwTiJIYtTiJIYRnECaZJBHEWQZWOIkxFkcQZJnEIcJZDFGSRRCqM4hSxOIIlSiOMMkjCFNMogjlJIwxTiOIEsTCCLUojDGNIwgSyMIQ0TSMMYsjCBLIwhDRPIwgTSIIYsDCENEkiDCLIghjQIIQ1iyIIQ0iCCzA8h9SPIfB8y34fUDyH1I8j8ADLPh9QLIfV8yDwPUs-HzPMgdX3IXA9S14fMcSF1PMgcFzLbgcxxILUdyGwbMtuC1LIgsyxITQsyw4TUMCHTDUh1AzJNg1TTIdU0yFQVUlWFTFEgUxRIZRkyWYZMkiCTJEhFETJRhEwQIOMFyHgeMp6DjOPwH_Gd1Vc?type=png)
+![Architecture Diagram](https://via.placeholder.com/800x400?text=Serverless+Photo+App+Architecture)
 
-The application uses the following AWS services:
+### Components
 
-- **API Gateway**: HTTP API with two endpoints:
-  - `POST /photos`: Upload a photo and its metadata
-  - `GET /photos/{photoId}`: Retrieve a photo using a pre-signed URL
+1. **Frontend**
+   - Simple HTML/CSS/JavaScript interface
+   - Allows users to upload photos and retrieve them using their IDs
 
-- **Lambda Functions**:
-  - `UploadPhotoFunction`: Handles photo uploads, stores the photo in S3, and saves metadata to DynamoDB
-  - `GetPhotoFunction`: Retrieves photo metadata from DynamoDB and generates a pre-signed URL for the S3 object
+2. **API Gateway**
+   - HTTP API with two endpoints:
+     - `POST /photos`: Upload a photo and its metadata
+     - `GET /photos/{photoId}`: Retrieve a photo by its ID
 
-- **S3**: Private bucket for storing photos
+3. **Lambda Functions**
+   - `UploadPhotoFunction`: Handles photo uploads, stores in S3, and saves metadata to DynamoDB
+   - `GetPhotoFunction`: Retrieves photo metadata from DynamoDB and generates a pre-signed URL for S3 access
 
-- **DynamoDB**: Table for storing photo metadata with the following attributes:
-  - `photoId` (Partition Key): Unique identifier for the photo
-  - `fileName`: Original file name of the photo
-  - `uploadTimestamp`: When the photo was uploaded
-  - `s3Key`: S3 object key for the photo
-
-## Prerequisites
-
-- [AWS Account](https://aws.amazon.com/account/)
-- [AWS CLI](https://aws.amazon.com/cli/) configured with appropriate credentials
-- [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
-- [Python 3.9+](https://www.python.org/downloads/)
+4. **Storage**
+   - **S3**: Private bucket for storing photo files
+   - **DynamoDB**: Table for storing photo metadata with the following attributes:
+     - `photoId` (Partition Key): Unique identifier for the photo
+     - `fileName`: Original file name
+     - `uploadTimestamp`: When the photo was uploaded
+     - `s3Key`: Location of the photo in S3
 
 ## Setup Instructions
 
-### 1. Clone the Repository
+### Prerequisites
 
-```bash
-git clone https://github.com/yourusername/photo-app.git
-cd photo-app
-```
+- [AWS CLI](https://aws.amazon.com/cli/) installed and configured
+- [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html) installed
+- Python 3.9 or later
 
-### 2. Install Dependencies
+### Deployment
 
-```bash
-# Install Python dependencies for local development
-pip install -r src/upload_photo/requirements.txt
-pip install -r src/get_photo/requirements.txt
+1. **Clone the repository**
 
-# Install test dependencies
-pip install pytest pytest-mock
-```
+   ```bash
+   git clone <repository-url>
+   cd photo-app
+   ```
 
-### 3. Run Tests
+2. **Build the application**
 
-```bash
-# Run unit tests
-python -m pytest tests/unit/
-```
+   ```bash
+   sam build
+   ```
 
-### 4. Deploy the Application
+3. **Deploy the application**
 
-```bash
-# Build the SAM application
-sam build
+   ```bash
+   sam deploy --guided
+   ```
 
-# Deploy to AWS (first time)
-sam deploy --guided
+   Follow the prompts to configure your deployment. For the first deployment, you'll need to provide:
+   - Stack name (e.g., `photo-app`)
+   - AWS Region
+   - Environment parameter (dev, test, or prod)
 
-# For subsequent deployments
-sam deploy
-```
+4. **Note the outputs**
 
-During the guided deployment, you'll be prompted for:
-- Stack Name: (e.g., photo-app)
-- AWS Region: (e.g., us-east-1)
-- Environment parameter: (dev or prod)
-- Confirm changes before deployment: (Y/n)
-- Allow SAM CLI IAM role creation: (Y/n)
-- Disable rollback: (y/N)
+   After deployment, SAM will output important information:
+   - API Gateway endpoint URL
+   - S3 bucket name
+   - DynamoDB table name
 
-### 5. Test the API
+5. **Update the frontend**
 
-After deployment, SAM will output the API Gateway endpoint URL. You can use this URL to test the API:
+   Open `frontend/index.html` and update the `API_URL` variable with your API Gateway endpoint URL:
 
-```bash
-# Example: Upload a photo
-curl -X POST https://your-api-id.execute-api.your-region.amazonaws.com/photos \
-  -H "Content-Type: application/json" \
-  -d '{"fileName":"test.jpg","image":"base64encodedimage"}'
+   ```javascript
+   const API_URL = 'https://your-api-id.execute-api.your-region.amazonaws.com/dev';
+   ```
 
-# Example: Get a photo
-curl https://your-api-id.execute-api.your-region.amazonaws.com/photos/your-photo-id
-```
+### Local Development
 
-### 6. Run the Frontend Locally
+1. **Install dependencies**
 
-Open the `frontend/index.html` file in your browser to test the application locally. Update the `API_ENDPOINT` variable in the JavaScript code to point to your deployed API Gateway endpoint.
+   ```bash
+   pip install -r src/upload_photo/requirements.txt
+   pip install -r src/get_photo/requirements.txt
+   ```
 
-## Local Development
+2. **Run unit tests**
 
-### Running Lambda Functions Locally
+   ```bash
+   python -m unittest discover tests/unit
+   ```
 
-You can use SAM CLI to run the Lambda functions locally:
+3. **Local API testing with SAM**
 
-```bash
-# Invoke the upload function
-sam local invoke UploadPhotoFunction --event events/upload_event.json
+   ```bash
+   sam local start-api
+   ```
 
-# Invoke the get function
-sam local invoke GetPhotoFunction --event events/get_event.json
-```
+   This will start a local API Gateway instance that you can use for testing:
+   - Upload: `http://localhost:3000/photos`
+   - Get: `http://localhost:3000/photos/{photoId}`
 
-### Starting the API Locally
+4. **Testing the frontend locally**
 
-```bash
-sam local start-api
-```
+   You can serve the frontend using any HTTP server, for example:
 
-This will start a local API Gateway at http://127.0.0.1:3000 that you can use for testing.
+   ```bash
+   cd frontend
+   python -m http.server 8000
+   ```
 
-## Project Structure
-
-```
-photo-app/
-├── src/
-│   ├── upload_photo/
-│   │   ├── app.py            # Upload photo Lambda function
-│   │   └── requirements.txt  # Dependencies for upload function
-│   ├── get_photo/
-│   │   ├── app.py            # Get photo Lambda function
-│   │   └── requirements.txt  # Dependencies for get function
-├── tests/
-│   ├── unit/
-│   │   ├── test_upload_photo.py  # Unit tests for upload function
-│   │   └── test_get_photo.py     # Unit tests for get function
-├── frontend/
-│   └── index.html            # Simple HTML frontend for testing
-├── template.yaml             # SAM template defining AWS resources
-└── README.md                 # This file
-```
+   Then open `http://localhost:8000` in your browser.
 
 ## Security Considerations
 
-- The S3 bucket is configured as private, and photos are only accessible via pre-signed URLs
-- Lambda functions follow the principle of least privilege with specific IAM permissions
-- API Gateway endpoints can be further secured with authentication mechanisms (e.g., AWS Cognito)
+- The S3 bucket is configured as private, with no public access
+- API Gateway endpoints use CORS to control access
+- Lambda functions use least-privilege IAM roles
+- Pre-signed URLs for S3 objects expire after 1 hour (configurable)
 
-## Cleanup
+## Limitations and Future Improvements
 
-To avoid incurring charges, delete the AWS resources when you're done:
-
-```bash
-sam delete
-```
+- Currently, there's no authentication or user management
+- File size is limited by API Gateway payload limits (10MB)
+- No image processing or resizing capabilities
+- Could add pagination for retrieving multiple photos
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+[MIT License](LICENSE)
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
